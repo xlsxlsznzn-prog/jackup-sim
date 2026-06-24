@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>특허 10-1480517: 3D 일체형 유압 라인 및 흐름 시뮬레이터</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f1f2f6; margin: 0; padding: 20px; color: #2f3640; overflow: hidden; }
+        h1 { text-align: center; color: #1e272e; margin: 0 0 5px 0; font-size: 24px; }
+        .patent-info { text-align: center; font-size: 13px; color: #718093; margin-bottom: 15px; }
+        .container { display: flex; justify-content: center; gap: 20px; max-width: 1600px; height: calc(100vh - 100px); margin: 0 auto; }
+        .control-panel { flex: 0.7; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 380px; display: flex; flex-direction: column; overflow-y: auto; }
+        .view-panel { flex: 2; background: #ffffff; padding: 10px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; }
+        #canvas3d { width: 100%; height: 100%; border-radius: 8px; }
+        .btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        button { flex: 1; padding: 12px; font-size: 14px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+        .btn-up { background-color: #ff9f43; color: white; }
+        .btn-up:hover { background-color: #ee5253; }
+        .btn-down { background-color: #10ac84; color: white; }
+        .btn-down:hover { background-color: #01a3a4; }
+        .status-box { background-color: #f1f2f6; padding: 15px; border-radius: 8px; border-left: 5px solid #2e86de; margin-bottom: 15px; }
+        .status-title { font-weight: bold; margin-bottom: 5px; color: #222; font-size: 14px; }
+        .status-desc { font-size: 13px; line-height: 1.5; color: #555; }
+        .legend-title { font-weight: bold; font-size: 13px; margin-top: 10px; color: #333; }
+        .part-legend { display: grid; grid-template-columns: 1fr; gap: 6px; font-size: 12px; background: #f8f9fa; padding: 10px; border-radius: 6px; margin-top: 5px; }
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .color-box { width: 12px; height: 12px; border-radius: 3px; }
+        .tip-box { background-color: #e3f2fd; color: #0d47a1; font-size: 11px; padding: 8px; border-radius: 5px; margin-top: auto; border: 1px solid #bbdefb; }
+    </style>
+</head>
+<body>
+
+    <h1>잭업바지 유압 관로-흐름 화살표 일체형 3D 시뮬레이터</h1>
+    <div class="patent-info">등록특허 제10-1480517호 기반: 흰색 배경 및 3D 입체 파이프 라인 유류 흐름 구현</div>
+
+    <div class="container">
+        <div class="control-panel">
+            <div class="status-title">🕹️ 유압 제어 모드</div>
+            <div class="btn-group">
+                <button class="btn-up" onclick="startSequence('JACK_UP')">▲ 연속 잭업 (선체 상승)</button>
+                <button class="btn-down" onclick="startSequence('JACK_DOWN')">▼ 연속 잭다운 (선체 하강)</button>
+            </div>
+
+            <div class="status-box">
+                <div class="status-title" id="step-title">시스템 상태: 중립 고정</div>
+                <div class="status-desc" id="step-desc">상·하부 회전 키가 유격 없이 홈에 완전 체결되어 하중을 안정적으로 지탱하고 있습니다.</div>
+            </div>
+
+            <div class="legend-title">🛠️ 3D 배관 및 흐름 색상 가이드</div>
+            <div class="part-legend">
+                <div class="legend-item"><div class="color-box" style="background: rgba(116, 125, 140, 0.4);"></div> 반투명 실물 유압 파이프 라인 (3D 튜브 호스)</div>
+                <div class="legend-item"><div class="color-box" style="background: #ff3838;"></div> 고압 오일 흐름 화살표 입자 (P포트 공급축)</div>
+                <div class="legend-item"><div class="color-box" style="background: #2e86de;"></div> 저압 환수 오일 흐름 화살표 입자 (T포트 리턴축)</div>
+            </div>
+
+            <div class="legend-title">🏗️ 기계 부품 색상 매칭 (부호 번호)</div>
+            <div class="part-legend" style="margin-bottom: 10px;">
+                <div class="legend-item"><div class="color-box" style="background: #4b6584;"></div> 120 레그스퍼드 (중심 원형 기둥)</div>
+                <div class="legend-item"><div class="color-box" style="background: #fed330;"></div> 121 외벽 돌출블록 (걸림턱 기어 부재)</div>
+                <div class="legend-item"><div class="color-box" style="background: #0097e6;"></div> 142 상부 지지부 회전 키 (상부 클램프)</div>
+                <div class="legend-item"><div class="color-box" style="background: #ff3838;"></div> 132 하부 고정부 회전 키 (하부 클램프)</div>
+                <div class="legend-item"><div class="color-box" style="background: #26de81;"></div> 146 유압 승하강 실린더 (상하 주행용)</div>
+            </div>
+
+            <div class="tip-box">
+                💡 <b>3D 뷰포트 조작 팁:</b><br>
+                - 마우스 왼쪽 클릭 + 드래그: 카메라 360도 회전<br>
+                - 마우스 휠 스크롤: 화면 확대 및 축소
+            </div>
+        </div>
+
+        <div class="view-panel">
+            <div id="canvas3d"></div>
+        </div>
+    </div>
+
+    <script>
+        // Three.js 인프라 변수
+        let scene, camera, renderer, controls;
+        
+        // 기계 장치 부품 변수
+        let spudLeg, upperCarriage, lowerHousing;
+        let upperKeyRing, lowerKeyRing;
+        let upperRotaryCylinder, lowerRotaryCylinder;
+        let upperRotaryRod, lowerRotaryRod;
+        let leftLiftRod, rightLiftRod;
+
+        // [신규] 3D 유압 라인 배관 및 화살표 흐름 입자 배열
+        let hydraulicPipes = [];
+        let flowParticles = [];
+
+        // 물리 변수 상태 인터폴레이션 매칭
+        let currentSpudY = 0, targetSpudY = 0;
+        let currentSupportY = 1, targetSupportY = 1;
+        let currentUpperAngle = 0, targetUpperAngle = 0;
+        let currentLowerAngle = 0, targetLowerAngle = 0;
+
+        // 실시간 유압 제어 흐름 플래그 ('NONE', 'UPPER_UNLOOCK', 'LIFT_UP', 'UPPER_LOCK', 'LOWER_UNLOCK', 'LIFT_DOWN', 'LOWER_LOCK')
+        let currentFlowState = 'NONE';
+        let particleSpeedOffset = 0;
+
+        let currentMode = 'NEUTRAL';
+        let currentStep = 0;
+        let isAnimating = false;
+
+        // 특허 청구항 시퀀스 및 동적 유압 흐름선 상태 연동
+        const sequences = {
+            JACK_UP: [
+                { title: "1단계: 상부키(지지부) 회전 해제", desc: "상부 회전실린더(145) 라인에 고압이 공급되어 레버를 당깁니다. 상부 키가 해제됩니다.", action: () => { targetUpperAngle = 0.4; currentFlowState = 'UPPER_UNLOCK'; } },
+                { title: "2단계: 상부키(지지부) 캐리지 상승", desc: "메인 유압 승하강 실린더(146) 상단 관로로 오일이 인입되어 가이드하우징 어셈블리를 피치 3.0 위치로 전진시킵니다.", action: () => { targetSupportY = 3.0; currentFlowState = 'LIFT_UP'; } },
+                { title: "3단계: 상승 완료된 상부키 재결합", desc: "회전실린더(145) 반대 관로에 고압이 유입되어 링을 역회전시켜 새로운 홈에 유격 없이 결합합니다.", action: () => { targetUpperAngle = 0; currentFlowState = 'UPPER_LOCK'; } },
+                { title: "4단계: 하부키(고정부) 회전 해제", desc: "하부 회전실린더(135) 작동 관로가 활성화되어 하부 고정블록 잠금을 풀어 기둥 이동 통로를 개방합니다.", action: () => { targetLowerAngle = 0.4; currentFlowState = 'LOWER_UNLOCK'; } },
+                { title: "5단계: 레그스퍼드 하강 구동 (선체 잭업)", desc: "승하강 실린더(146) 하단 메인 배관으로 고압유가 공급되어 기둥을 강력하게 밀어내립니다. 선체가 최종 상승합니다.", action: () => { targetSpudY = currentSpudY - 2.0; targetSupportY = 1.0; currentFlowState = 'LIFT_DOWN'; } },
+                { title: "6단계: 하부키(고정부) 재결합 및 압력 고정", desc: "하부 키가 새 홈에 맞물리고 유압 시스템이 안전 대기 상태(무압 바이패스)로 변환됩니다.", action: () => { targetLowerAngle = 0; currentFlowState = 'NONE'; } }
+            ],
+            JACK_DOWN: [
+                { title: "1단계: 하부키(고정부) 회전 해제", desc: "하부 클램프 해제 라인에 고압 유량이 인입되어 고정부 키 잠금을 해제합니다.", action: () => { targetLowerAngle = 0.4; currentFlowState = 'LOWER_UNLOCK'; } },
+                { title: "2단계: 레그스퍼드 견인 상승 (선체 잭다운)", desc: "상부 지지부가 기둥을 문 상태에서 메인 실린더(146) 라인이 가동하여 레그스퍼드 기둥 전체를 위로 끌어올립니다.", action: () => { targetSpudY = currentSpudY + 2.0; targetSupportY = 3.0; currentFlowState = 'LIFT_UP'; } },
+                { title: "3단계: 하부키(고정부) 재결합 고정 안전 확보", desc: "하부 회전실린더가 전진 가동하여 고정블록을 새로운 홈에 완벽히 물려 선체 하중을 안전 락킹합니다.", action: () => { targetLowerAngle = 0; currentFlowState = 'LOWER_LOCK'; } },
+                { title: "4단계: 상부키(지지부) 회전 해제", desc: "하부키가 중적을 지탱하므로 상부 회전실린더가 역구동하여 지지블록 잠금을 해제합니다.", action: () => { targetUpperAngle = 0.4; currentFlowState = 'UPPER_UNLOCK'; } },
+                { title: "5단계: 상부 지지 가이드하우징 복귀 하강", desc: "승하강실린더 하향 관로가 작동하여 자유로워진 상부 지지 캐리지 프레임만 원래 아래쪽 표준 위치(1.0)로 복귀시킵니다.", action: () => { targetSupportY = 1.0; currentFlowState = 'LIFT_DOWN'; } },
+                { title: "6단계: 상부키(지지부) 초기화 결합", desc: "제자리로 내려온 상부 회전실린더가 지지블록을 아래쪽 기둥 홈에 결합하여 연속 구동을 준비합니다.", action: () => { targetUpperAngle = 0; currentFlowState = 'NONE'; } }
+            ]
+        };
+
+        // 흰색 배경 3D 뷰포트 초기화 엔진
+        function init3D() {
+            const container = document.getElementById('canvas3d');
+            let width = container.clientWidth || 800;
+            let height = container.clientHeight || 600;
+
+            scene = new THREE.Scene();
+            // [요청사항 반영] 배경색을 완전한 흰색으로 전면 변경
+            scene.background = new THREE.Color('#ffffff');
+            
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+            camera.position.set(10, 5, 11); 
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(width, height);
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 + 0.1; 
+
+            // 흰색 배경 최적화용 조명 강도 및 그림자 파라미터 밸런싱
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.7);
+            dirLight1.position.set(10, 18, 8);
+            scene.add(dirLight1);
+
+            const dirLight2 = new THREE.DirectionalLight(0xa5b1c2, 0.3);
+            dirLight2.position.set(-8, 5, -8);
+            scene.add(dirLight2);
+
+            // 장치 도크 베이스 플레이트
+            const floorGeo = new THREE.CylinderGeometry(5.2, 5.5, 0.3, 32);
+            const floorMat = new THREE.MeshStandardMaterial({ color: '#d1d8e0', roughness: 0.5 });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.position.y = -3.8;
+            scene.add(floor);
+
+            buildMechanicalComponents();
+            buildHydraulicPipelines(); // [신규] 3D 파이프라인 형성 링킹
+            window.addEventListener('resize', onWindowResize);
+            animate();
+        }
+
+        function buildMechanicalComponents() {
+            const steelMat = new THREE.MeshStandardMaterial({ color: '#4b6584', metalness: 0.4, roughness: 0.3 });
+            const brassMat = new THREE.MeshStandardMaterial({ color: '#fed330', metalness: 0.5, roughness: 0.2 });
+            const silverMat = new THREE.MeshStandardMaterial({ color: '#d2d2d2', metalness: 0.8, roughness: 0.1 });
+            const upperKeyMat = new THREE.MeshStandardMaterial({ color: '#0097e6', metalness: 0.5, roughness: 0.3 });
+            const lowerKeyMat = new THREE.MeshStandardMaterial({ color: '#ff3838', metalness: 0.5, roughness: 0.3 });
+            const liftCylMat = new THREE.MeshStandardMaterial({ color: '#26de81', metalness: 0.4, roughness: 0.4 });
+
+            // 1. 120 레그스퍼드 중심 원형 샤프트 기둥
+            spudLeg = new THREE.Group();
+            const legCore = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 28, 32), steelMat);
+            spudLeg.add(legCore);
+
+            // 초정밀 하중 결합용 피치 2.0, 높이 1.0 사양 돌기 정렬
+            const blockGeo = new THREE.BoxGeometry(0.48, 1.0, 0.75);
+            for (let y = -14; y <= 14; y += 2.0) {
+                for (let i = 0; i < 4; i++) {
+                    const block = new THREE.Mesh(blockGeo, brassMat);
+                    const angle = (i * Math.PI / 2);
+                    block.position.set(Math.cos(angle) * 1.4, y, Math.sin(angle) * 1.4);
+                    block.rotation.y = -angle;
+                    spudLeg.add(block);
+                }
+            }
+            scene.add(spudLeg);
+
+            // 2. 130 하부 고정부 키 조립 (y = -2.8 고정 배치)
+            lowerHousing = new THREE.Group(); lowerHousing.position.y = -2.8;
+            lowerKeyRing = new THREE.Mesh(new THREE.CylinderGeometry(1.95, 1.95, 0.94, 32, 1, true), lowerKeyMat);
+            const lugGeo = new THREE.BoxGeometry(0.45, 0.94, 0.72);
+            for(let i=0; i<4; i++) {
+                const lug = new THREE.Mesh(lugGeo, lowerKeyMat); const angle = (i * Math.PI / 2);
+                lug.position.set(Math.cos(angle)*1.42, 0, Math.sin(angle)*1.42); lug.rotation.y = -angle; lowerKeyRing.add(lug);
+            }
+            const lowerLever = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.12, 0.18), lowerKeyMat); lowerLever.position.set(2.2, 0, 0); lowerKeyRing.add(lowerLever);
+            lowerHousing.add(lowerKeyRing);
+
+            lowerRotaryCylinder = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 1.1, 16), steelMat); lowerRotaryCylinder.position.set(3.2, 0, -1.3); lowerRotaryCylinder.rotation.x = Math.PI / 2; lowerHousing.add(lowerRotaryCylinder);
+            lowerRotaryRod = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.1, 16), silverMat); lowerRotaryRod.position.set(3.2, 0, -0.3); lowerRotaryRod.rotation.x = Math.PI / 2; lowerHousing.add(lowerRotaryRod);
+            scene.add(lowerHousing);
+
+            // 3. 140 상부 지지부 캐리지 조립 (수직 가동형)
+            upperCarriage = new THREE.Group();
+            upperKeyRing = new THREE.Mesh(new THREE.CylinderGeometry(1.95, 1.95, 0.94, 32, 1, true), upperKeyMat);
+            for(let i=0; i<4; i++) {
+                const lug = new THREE.Mesh(lugGeo, upperKeyMat); const angle = (i * Math.PI / 2);
+                lug.position.set(Math.cos(angle)*1.42, 0, Math.sin(angle)*1.42); lug.rotation.y = -angle; upperKeyRing.add(lug);
+            }
+            const upperLever = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.12, 0.18), upperKeyMat); upperLever.position.set(2.2, 0, 0); upperKeyRing.add(upperLever);
+            upperCarriage.add(upperKeyRing);
+
+            upperRotaryCylinder = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 1.1, 16), steelMat); upperRotaryCylinder.position.set(3.2, 0, -1.3); upperRotaryCylinder.rotation.x = Math.PI / 2; upperCarriage.add(upperRotaryCylinder);
+            upperRotaryRod = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.1, 16), silverMat); upperRotaryRod.position.set(3.2, 0, -0.3); upperRotaryRod.rotation.x = Math.PI / 2; upperCarriage.add(upperRotaryRod);
+            scene.add(upperCarriage);
+
+            // 4. 146 유압 대칭 서보 승하강 실린더 외곽 배치
+            const liftCylBarGeo = new THREE.CylinderGeometry(0.22, 0.22, 5.5, 16);
+            const leftLiftCyl = new THREE.Mesh(liftCylBarGeo, liftCylMat); leftLiftCyl.position.set(-2.2, 1.2, 0); scene.add(leftLiftCyl);
+            const rightLiftCyl = new THREE.Mesh(liftCylBarGeo, liftCylMat); rightLiftCyl.position.set(0, 1.2, -2.2); scene.add(rightLiftCyl);
+
+            const liftRodGeo = new THREE.CylinderGeometry(0.11, 0.11, 5.5, 16);
+            leftLiftRod = new THREE.Mesh(liftRodGeo, silverMat); scene.add(leftLiftRod);
+            rightLiftRod = new THREE.Mesh(liftRodGeo, silverMat); scene.add(rightLiftRod);
+        }
+
+        // [신규 핵심 기능] 3D 반투명 유압 관로 호스 및 내부 주행 입자(화살표 역할) 동적 배치
+        function buildHydraulicPipelines() {
+            const pipeMat = new THREE.MeshStandardMaterial({ color: '#747d8c', transparent: true, opacity: 0.35, roughness: 0.2 });
+            
+            // 유압 펌프 스테이션 역할의 가상 중앙 분배기 블록 배치
+            const controlBlock = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.8, 1.0), new THREE.MeshStandardMaterial({ color: '#57606f', metalness: 0.6 }));
+            controlBlock.position.set(4.5, -3.5, 1.5);
+            scene.add(controlBlock);
+
+            // 4개 독립 유압 주행 관로 3D 커브 정의 (분배 블록 -> 각 구동 실린더 연결선)
+            const paths = [
+                // 파이프 0: 하부 로터리 실린더 잠금/해제 제어선
+                new THREE.CatmullRomCurve3([ new THREE.Vector3(4.5, -3.5, 1.5), new THREE.Vector3(4.0, -3.2, -0.5), new THREE.Vector3(3.2, -2.8, -1.3) ]),
+                // 파이프 1: 상부 가동 로터리 실린더 전용 플렉시블 호스 라인
+                new THREE.CatmullRomCurve3([ new THREE.Vector3(4.5, -3.5, 1.5), new THREE.Vector3(5.0, 0, 0), new THREE.Vector3(4.2, 1.5, -1.0), new THREE.Vector3(3.2, 1.0, -1.3) ]),
+                // 파이프 2: 메인 승하강 실린더 상단 인입 관로
+                new THREE.CatmullRomCurve3([ new THREE.Vector3(4.5, -3.5, 1.5), new THREE.Vector3(1.5, -3.0, -2.2), new THREE.Vector3(0, 3.8, -2.2) ]),
+                // 파이프 3: 메인 승하강 실린더 하단 인입 관로
+                new THREE.CatmullRomCurve3([ new THREE.Vector3(4.5, -3.5, 1.5), new THREE.Vector3(-1.0, -3.2, 1.0), new THREE.Vector3(-2.2, -1.2, 0) ])
+            ];
+
+            // 3D 튜브 형태로 파이프라인 공간 표출
+            paths.forEach((path) => {
+                const pipeGeo = new THREE.TubeGeometry(path, 24, 0.08, 8, false);
+                const pipeMesh = new THREE.Mesh(pipeGeo, pipeMat);
+                scene.add(pipeMesh);
+                hydraulicPipes.push({ path: path, mesh: pipeMesh });
+            });
+
+            // 관로당 6개씩 실시간 흐름 상태를 표출할 화살표 입자(구체 형태) 마스터 배열 생성
+            const particleGeo = new THREE.SphereGeometry(0.06, 8, 8);
+            const highPressMat = new THREE.MeshBasicMaterial({ color: '#ff3838' }); // 고압 공급선 (적색)
+            const lowPressMat = new THREE.MeshBasicMaterial({ color: '#2e86de' });  // 저압 환수선 (청색)
+
+            for (let p = 0; p < paths.length; p++) {
+                let pList = [];
+                for (let i = 0; i < 6; i++) {
+                    const pMesh = new THREE.Mesh(particleGeo, highPressMat);
+                    pMesh.visible = false;
+                    scene.add(pMesh);
+                    pList.push({ mesh: pMesh, ratio: (i / 6) });
+                }
+                flowParticles.push(pList);
+            }
+        }
+
+        // [신규 핵심 기능] 각 제어 단계별 파이프 내부 화살표 전사 루틴
+        function updateHydraulicFlows() {
+            particleSpeedOffset += 0.012; // 화살표 입자 이동 유속 인자
+
+            // 고압 유량(적색) 및 저압 유량(청색)의 관로 매칭 필터링 매커니즘
+            flowParticles.forEach((pList) => {
+                pList.forEach((p) => { p.mesh.visible = false; }); // 디폴트 소거
+            });
+
+            const highPressMat = new THREE.MeshBasicMaterial({ color: '#ff3838' });
+            const lowPressMat = new THREE.MeshBasicMaterial({ color: '#2e86de' });
+
+            if (currentFlowState === 'UPPER_UNLOCK' || currentFlowState === 'UPPER_LOCK') {
+                // 상부 클램프 가동 시: 파이프 1번 활성화
+                animatePipeParticles(1, highPressMat);
+            } 
+            else if (currentFlowState === 'LIFT_UP') {
+                // 수직 실린더 수축 상승 시: 파이프 2번 고압 공급, 3번 저압 환수
+                animatePipeParticles(2, highPressMat);
+                animatePipeParticles(3, lowPressMat);
+            } 
+            else if (currentFlowState === 'LOWER_UNLOCK' || currentFlowState === 'LOWER_LOCK') {
+                // 하부 클램프 가동 시: 파이프 0번 활성화
+                animatePipeParticles(0, highPressMat);
+            } 
+            else if (currentFlowState === 'LIFT_DOWN') {
+                // 수직 실린더 확장 하강 시: 파이프 3번 고압 공급, 2번 저압 환수
+                animatePipeParticles(3, highPressMat);
+                animatePipeParticles(2, lowPressMat);
+            }
+        }
+
+        // 파이프 커브 궤적을 연동한 입체 화살표 위치 계산 보간기
+        function animatePipeParticles(pipeIdx, material) {
+            let path = hydraulicPipes[pipeIdx].path;
+            let particles = flowParticles[pipeIdx];
+
+            // 상부 가동형 실린더 라인(파이프 1번)의 경우 캐리지 가동 높이(`currentSupportY`)에 연동되도록 타겟 종점 동적 보정
+            if (pipeIdx === 1) {
+                path.points[3].set(3.2, currentSupportY, -1.3);
+                path.updateArcLengths();
+            }
+
+            particles.forEach((p) => {
+                p.mesh.material = material;
+                p.mesh.visible = true;
+
+                // 유속 오프셋을 결합하여 관로 내부를 무한 주행하는 화살표 효과 생성
+                let currentRatio = (p.ratio + particleSpeedOffset) % 1.0;
+                let pos = path.getPointAt(currentRatio);
+                p.mesh.position.copy(pos);
+            });
+        }
+
+        // 실시간 프레임 애니메이션 렌더링 루프
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // 부드러운 하드웨어 유압 거동을 위한 LERP 선형 보간 기동
+            currentSpudY += (targetSpudY - currentSpudY) * 0.1;
+            currentSupportY += (targetSupportY - currentSupportY) * 0.1;
+            currentUpperAngle += (targetUpperAngle - currentUpperAngle) * 0.1;
+            currentLowerAngle += (targetLowerAngle - currentLowerAngle) * 0.1;
+
+            spudLeg.position.y = currentSpudY;
+            upperCarriage.position.y = currentSupportY;
+            upperKeyRing.rotation.y = currentUpperAngle;
+            lowerKeyRing.rotation.y = currentLowerAngle;
+
+            upperRotaryRod.position.z = -0.3 - (currentUpperAngle * 1.2);
+            lowerRotaryRod.position.z = -0.3 - (currentLowerAngle * 1.2);
+
+            leftLiftRod.position.set(-2.2, (currentSupportY - 1.2), 0);
+            leftLiftRod.scale.y = Math.max(0.1, (5.0 - currentSupportY) / 3.0);
+            rightLiftRod.position.set(0, (currentSupportY - 1.2), -2.2);
+            rightLiftRod.scale.y = Math.max(0.1, (5.0 - currentSupportY) / 3.0);
+
+            // [신규] 입체 유압 라인 내부 화살표 입자 실시간 계산 및 드로잉
+            updateHydraulicFlows();
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function startSequence(mode) {
+            if (isAnimating) return;
+            currentMode = mode; currentStep = 0; isAnimating = true;
+            runStep();
+        }
+
+        function runStep() {
+            let stepData = sequences[currentMode][currentStep];
+            document.getElementById('step-title').innerText = stepData.title;
+            document.getElementById('step-desc').innerText = stepData.desc;
+            
+            stepData.action();
+
+            let delay = (currentStep === 1 || currentStep === 4) ? 1400 : 900;
+            setTimeout(nextStep, delay);
+        }
+
+        function nextStep() {
+            currentStep++;
+            if (currentStep < 6) {
+                runStep();
+            } else {
+                isAnimating = false;
+                currentFlowState = 'NONE'; // 완료 시 중립 무압 상태로 초기화
+                document.getElementById('step-title').innerText = `유압 구동 완료: 중립 잠금`;
+                document.getElementById('step-desc').innerText = `지정 피치의 승하강 연동 행정이 끝나 시스템이 부하 분담 잠금 위치로 자동 초기화되었습니다.`;
+            }
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas3d');
+            let width = container.clientWidth || 800;
+            let height = container.clientHeight || 600;
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        }
+
+        window.onload = () => {
+            init3D();
+        };
+    </script>
+</body>
+</html>
